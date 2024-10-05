@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to Map</title>
+    <link rel="stylesheet" href="jsonPraser.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js"
+        integrity="sha512-DdX/YwF5e41Ok+AI81HI8f5/5UsoxCVT9GKYZRIzpLxb8Twz4ZwPPX+jQMwMhNQ9b5+zDEefc+dcvQoPWGNZ3g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+
+<h1 class="page-title">GeoJSON Map Viewer</h1> <!-- Page title -->
+<div class="container">
+    <div id="map"></div>
+    <div class="sidebar">
+        <h2>Enter the JSON data to load on the map.</h2>
+        <textarea id="text" class="textbox1" placeholder="Paste Your GeoJSON here..."></textarea>
+        <input id="submit" onclick="readText()" type="button" value="Submit">
+    </div>
+</div>
+<div class="radio-list">
+    <label style="font-weight: bold;">Select Basemap:</label>
+    <label><input onclick="loadLayer(this)" type="radio" name="options1" value="box 1" id="Hybrid"> Hybrid Map</label>
+    <label><input onclick="loadLayer(this)" type="radio" name="options1" value="box 2" id="Satellite"> Satellite Map</label>
+    <label><input onclick="loadLayer(this)" type="radio" name="options1" value="box 3" id="OpenStreet"> OpenStreet Map</label>
+</div>
+</body>
+
+    <script>
+
+        var file = null;
+        var basemap = null;
+
+
+        var map = L.map('map', {
+            center: [23.667278, 80.828706],
+            zoom: 5
+        });
+
+        var sat = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        }).addTo(map);
+
+        var Satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+
+        var OpenStreet = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}', { foo: 'bar', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+
+        var Hybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+
+        function loadLayer(e) {
+            //remove all basemaps
+            if (basemap){
+                map.removeLayer(basemap);
+            }
+            basemap = window[e.id];
+            map.addLayer(basemap);
+        }
+
+        function readText() {
+            var userText = document.getElementById('text').value;
+            // console.log(userText);
+            try {
+                var userNote = JSON.parse(userText);
+                if (file) {
+                    map.removeLayer(file);
+                }
+                file = new L.geoJSON(userNote);
+                // console.log(typeof(file));
+                map.addLayer(file);
+                map.fitBounds(file.getBounds());
+
+            }
+            catch (error) {
+                alert('Invalid JSON Provided, please enter a valid JSON data.')
+                console.log('Invalid Data...!')
+            }
+
+
+
+        }
+    </script>
+</body>
+
+</html>
