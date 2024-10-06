@@ -13,84 +13,155 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js"
         integrity="sha512-DdX/YwF5e41Ok+AI81HI8f5/5UsoxCVT9GKYZRIzpLxb8Twz4ZwPPX+jQMwMhNQ9b5+zDEefc+dcvQoPWGNZ3g=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.js"></script>
 </head>
 
-<h1 class="page-title">GeoJSON Map Viewer</h1> <!-- Page title -->
+<h1 class="page-title">GeoJSON Map Viewer & Downloader</h1> <!-- Page title -->
 <div class="container">
     <div id="map"></div>
     <div class="sidebar">
-        <h2>Enter the JSON data to load on the map.</h2>
-        <textarea id="text" class="textbox1" placeholder="Paste Your GeoJSON here..."></textarea>
-        <input id="submit" onclick="readText()" type="button" value="Submit">
+        <h2>Paste your GeoJSON data to load on the map or draw on the map to get GeoJson.</h2>
+        <textarea id="text" class="textbox1" placeholder="Your GeoJSON...."></textarea>
+        <div class="buttons">
+            <input id="submit" onclick="readText()" type="button" value="Submit">
+            <input id="clear" onclick="clearAll()" type="button" value="Clear All">
+        </div>
     </div>
 </div>
 <div class="radio-list">
     <label style="font-weight: bold;">Select Basemap:</label>
     <label><input onclick="loadLayer(this)" type="radio" name="options1" value="box 1" id="Hybrid"> Hybrid Map</label>
-    <label><input onclick="loadLayer(this)" type="radio" name="options1" value="box 2" id="Satellite"> Satellite Map</label>
-    <label><input onclick="loadLayer(this)" type="radio" name="options1" value="box 3" id="OpenStreet"> OpenStreet Map</label>
+    <label><input onclick="loadLayer(this)" type="radio" name="options1" value="box 2" id="Satellite"> Satellite
+        Map</label>
+    <label><input onclick="loadLayer(this)" type="radio" name="options1" value="box 3" id="OpenStreet"> OpenStreet
+        Map</label>
 </div>
 </body>
 
-    <script>
+<script>
 
-        var file = null;
-        var basemap = null;
+    var file = null;
+    var basemap = null;
+    var textFile = null;
 
+    var map = L.map('map', {
+        center: [23.667278, 80.828706],
+        zoom: 5
+    });
 
-        var map = L.map('map', {
-            center: [23.667278, 80.828706],
-            zoom: 5
-        });
+    var sat = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    }).addTo(map);
 
-        var sat = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        }).addTo(map);
+    //Drawing map control and adding them as file ,
+    var drawnFeature = new L.FeatureGroup();
+    map.addLayer(drawnFeature);
 
-        var Satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-        });
-
-        var OpenStreet = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}', { foo: 'bar', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
-
-        var Hybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        });
-
-        function loadLayer(e) {
-            //remove all basemaps
-            if (basemap){
-                map.removeLayer(basemap);
-            }
-            basemap = window[e.id];
-            map.addLayer(basemap);
-        }
-
-        function readText() {
-            var userText = document.getElementById('text').value;
-            // console.log(userText);
-            try {
-                var userNote = JSON.parse(userText);
-                if (file) {
-                    map.removeLayer(file);
+    var drawControl = new L.Control.Draw({
+        position: 'topright',
+        edit: {
+            featureGroup: drawnFeature,
+            // remove:false //For remove button on the layer control.
+        },
+        draw: {
+            polygon: {
+                shapeOptions: {
+                    color: "ff0000"
                 }
-                file = new L.geoJSON(userNote);
-                // console.log(typeof(file));
-                map.addLayer(file);
-                map.fitBounds(file.getBounds());
-
             }
-            catch (error) {
-                alert('Invalid JSON Provided, please enter a valid JSON data.')
-                console.log('Invalid Data...!')
+        }
+    });
+    map.addControl(drawControl);
+    //Saving  the file and adding it to map , saving file as text geojson for displaying in the text box
+    map.on("draw:created", function (e) {
+        var type = e.layerType;
+        var layer = e.layer;
+        drawnFeature.addLayer(layer);
+        var popFile = JSON.stringify(layer.toGeoJSON());
+        textFile = JSON.stringify(drawnFeature.toGeoJSON());
+        //Passing this textFile data to text box
+        document.getElementById('text').value = textFile
+        layer.bindPopup(`<p>${popFile}</p>`);
+    })
+    //saving edited layer data
+    map.on("draw:edited", function (e) {
+        var layers = e.layers;
+        layers.eachLayer(function (layer) {
+            drawnFeature.addLayer(layer);
+            var popFile = JSON.stringify(layer.toGeoJSON());
+            textFile = JSON.stringify(drawnFeature.toGeoJSON());
+            //Passing this textFile data to text box
+            document.getElementById('text').value = textFile
+            layer.bindPopup(`<p>${popFile}</p>`);
+        })
+    });
+    map.on("draw:remove", function (e) {
+        var layers = e.layers;
+        layers.eachLayer(function (layer) {
+            drawnFeature.addLayer(layer);
+            var popFile = JSON.stringify(layer.toGeoJSON());
+            textFile = JSON.stringify(drawnFeature.toGeoJSON());
+            //Passing this textFile data to text box
+            document.getElementById('text').value = textFile
+            layer.bindPopup(`<p>${popFile}</p>`);
+        })
+    });
+
+    var Satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+
+    var OpenStreet = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}', { foo: 'bar', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+
+    var Hybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    function loadLayer(e) {
+        //remove all basemaps
+        if (basemap) {
+            map.removeLayer(basemap);
+        }
+        basemap = window[e.id];
+        map.addLayer(basemap);
+    }
+
+    function clearAll() {
+        document.getElementById('text').value = "";
+        if (drawnFeature) {
+
+            drawnFeature.clearLayers();
+        }
+        if (file) {
+            map.removeLayer(file);
+        }
+    }
+    function readText() {
+        var userText = document.getElementById('text').value;
+        // console.log(userText);
+        try {
+            var userNote = JSON.parse(userText);
+            if (file) {
+                map.removeLayer(file);
             }
-
-
+            file = new L.geoJSON(userNote);
+            // console.log(typeof(file));
+            map.addLayer(file);
+            map.fitBounds(file.getBounds());
 
         }
-    </script>
+        catch (error) {
+            alert('Invalid JSON Provided, please enter a valid JSON data.')
+            console.log('Invalid Data...!')
+        }
+
+
+
+    }
+</script>
 </body>
 
 </html>

@@ -46,7 +46,10 @@ html {
     max-width: 100%; /* Prevent children from exceeding container width */
 
 }
-
+.buttons {
+    display: flex; /* horizonatally buttons .********************imp**************
+    /* flex-direction: column; */
+}
 .sidebar h2 {
     font-size: 24px; /* Increase font size */
     font-weight: bold; /* Make the text bold */
@@ -79,11 +82,24 @@ html {
     outline: none; /* Remove default outline */
 }
 
-#submit {
+#clear {
     font-weight: bold;
+    margin-left: 1px;
     background-color: #007bff; /* Primary button color */
     color: white; /* Text color */
-    width: 100%; /* Full width */
+    width: 50%; /* Full width */
+    padding: 10px; /* Padding for button */
+    border: none; /* Remove border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor */
+    transition: background-color 0.3s; /* Smooth background transition */
+}
+#submit {
+    font-weight: bold;
+    margin-left: 1px;
+    background-color: #007bff; /* Primary button color */
+    color: white; /* Text color */
+    width: 50%; /* Full width */
     padding: 10px; /* Padding for button */
     border: none; /* Remove border */
     border-radius: 4px; /* Rounded corners */
@@ -91,7 +107,10 @@ html {
     transition: background-color 0.3s; /* Smooth background transition */
 }
 
-#submit:hover {
+#submit:hover  {
+    background-color: #0056b3; /* Darker shade on hover */
+}
+#clear:hover  {
     background-color: #0056b3; /* Darker shade on hover */
 }
 
